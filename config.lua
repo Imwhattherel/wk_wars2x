@@ -73,6 +73,12 @@ CONFIG.keyDefaults =
 	-- Radar key lock key
 	key_lock = "l",
 
+	-- Radar front antenna hold toggle
+	front_state = "",
+
+	-- Radar rear antenna hold toggle
+	rear_state = "",
+
 	-- Radar front antenna lock/unlock Key
 	front_lock = "numpad8",
 
