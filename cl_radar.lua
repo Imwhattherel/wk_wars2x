@@ -51,9 +51,9 @@ local function RegisterKeyBinds()
 		RegisterCommand( "radar_remote", function()
 			if ( not RADAR:GetKeyLockState() ) then
 				-- Left Shift + radar_remote key toggles Doppler audio mute
-				if IsControlPressed(0, 61) then
-					local previousDopplerVolume = RADAR:GetPreviousDopplerAudio() 
-					local currentDopplerVolume = RADAR:GetSettingValue( "dopAudio" )
+				local previousDopplerVolume = RADAR:GetPreviousDopplerAudio()
+				local currentDopplerVolume = RADAR:GetSettingValue( "dopAudio" )
+				if IsControlPressed(0, 61) and (currentDopplerVolume > 0.0 or previousDopplerVolume > 0.0) then
 					--	Reset doppler audio to previousDopplerAudio value, or save and set to 0.0
 					if ( currentDopplerVolume ~= previousDopplerVolume ) then
 						RADAR:SetSettingValue( "dopAudio", previousDopplerVolume)
@@ -238,7 +238,7 @@ RADAR.vars =
 		{ displayText = { "bEE", "P¦¦" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 }, optionIndex = -1, settingText = "beep" },
 		{ displayText = { "VOI", "CE¦" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 }, optionIndex = -1, settingText = "voice" },
 		{ displayText = { "PLt", "AUd" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 }, optionIndex = -1, settingText = "plateAudio" },
-		{ displayText = { "DOP", "AUd" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.02, 0.03, 0.04, 0.05, 0.6 }, optionIndex = -1, settingText = "dopAudio" },
+		{ displayText = { "DOP", "AUd" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.02, 0.03, 0.04, 0.05, 0.06 }, optionIndex = -1, settingText = "dopAudio" },
 		{ displayText = { "DOP", "DIR" }, optionsText = { "FNT", "RER", "BTH" }, options = { 1, 2, 3 }, optionIndex = -1, settingText = "dopDirection" },
 		{ displayText = { "Uni", "tS¦" }, optionsText = { "USA", "INT" }, options = { "mph", "kmh" }, optionIndex = -1, settingText = "speedType" }
 	},
