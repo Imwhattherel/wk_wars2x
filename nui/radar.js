@@ -605,6 +605,7 @@ function settingUpdate( ants )
 ------------------------------------------------------------------------------------*/
 const context = new AudioContext();
 var dopplerVol = 0.02;
+var dopplerActive = true;
 
 let dopplerObjects = {
 	front: createDopplerObject( context ),
@@ -618,6 +619,8 @@ function setDopplerVol( vol )
 
 function setDopplerState( state )
 {
+	dopplerActive = state;
+
 	for ( let ant of [ "front", "rear" ] )
 	{
 		dopplerObjects[ant].vol.gain.exponentialRampToValueAtTime( state ? dopplerVol : 0.0001, context.currentTime + 0.1 );
@@ -643,6 +646,10 @@ function createDopplerObject( audioContext )
 
 function updateDoppler( ant, speed )
 {
+	if ( !dopplerActive ) {
+		return;
+	}
+
 	if ( speed > 5 ) {
 		let freq = ( speed * 30 ) + ( Math.random() * 15 );
 		dopplerObjects[ant].osc.frequency.exponentialRampToValueAtTime( freq, context.currentTime + 0.1 );
