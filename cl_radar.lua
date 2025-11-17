@@ -54,6 +54,7 @@ local function RegisterKeyBinds()
 				if ( CONFIG.enable_doppler and IsControlPressed( 0, 61 ) ) then
 					local previousDopplerVolume = RADAR:GetPreviousDopplerAudio()
 					local currentDopplerVolume = RADAR:GetSettingValue( "dopAudio" )
+					local preservePreviousVolume = false
 
 					if ( currentDopplerVolume > 0.0 or previousDopplerVolume > 0.0 ) then
 						-- Reset doppler audio to previousDopplerAudio value, or save and set to 0.0
@@ -64,9 +65,10 @@ local function RegisterKeyBinds()
 							RADAR:SetPreviousDopplerAudio( currentDopplerVolume )
 							RADAR:SetSettingValue( "dopAudio", 0.0 )
 							SendNUIMessage( { _type = "dopplerMute", state = true } )
+							preservePreviousVolume = true
 						end
 
-						RADAR:RefreshDopplerVolume()
+						RADAR:RefreshDopplerVolume( preservePreviousVolume )
 						SendNUIMessage( { _type = "audio", name = "beep", vol = RADAR:GetSettingValue( "beep" ) } )
 						return
 					end
@@ -381,15 +383,20 @@ function RADAR:IsDopplerAllowed()
 	return CONFIG.enable_doppler
 end
 
-function RADAR:RefreshDopplerVolume()
+function RADAR:RefreshDopplerVolume( preservePrevious )
 	if ( not self:IsDopplerAllowed() ) then
-		self:SetPreviousDopplerAudio( 0.0 )
+		if ( not preservePrevious ) then
+			self:SetPreviousDopplerAudio( 0.0 )
+		end
 		return
 	end
 
 	local volume = self:GetSettingValue( "dopAudio" )
 	SendNUIMessage( { _type = "dopplerVolume", vol = volume } )
-	self:SetPreviousDopplerAudio( volume )
+
+	if ( not preservePrevious ) then
+		self:SetPreviousDopplerAudio( volume )
+	end
 end
 
 -- Toggles the radar power
