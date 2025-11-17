@@ -50,10 +50,49 @@ local function RegisterKeyBinds()
 		-- Opens the remote control
 		RegisterCommand( "radar_remote", function()
 			if ( not RADAR:GetKeyLockState() ) then
+				-- Left Shift + radar_remote key toggles Doppler audio mute
+				if ( CONFIG.enable_doppler and IsControlPressed( 0, 61 ) ) then
+					local previousDopplerVolume = RADAR:GetPreviousDopplerAudio()
+					local currentDopplerVolume = RADAR:GetSettingValue( "dopAudio" )
+
+					if ( currentDopplerVolume > 0.0 or previousDopplerVolume > 0.0 ) then
+						-- Reset doppler audio to previousDopplerAudio value, or save and set to 0.0
+						if ( currentDopplerVolume ~= previousDopplerVolume ) then
+							RADAR:SetSettingValue( "dopAudio", previousDopplerVolume )
+							SendNUIMessage( { _type = "dopplerMute", state = false } )
+						else
+							RADAR:SetPreviousDopplerAudio( currentDopplerVolume )
+							RADAR:SetSettingValue( "dopAudio", 0.0 )
+							SendNUIMessage( { _type = "dopplerMute", state = true } )
+						end
+
+						RADAR:RefreshDopplerVolume()
+						SendNUIMessage( { _type = "audio", name = "beep", vol = RADAR:GetSettingValue( "beep" ) } )
+						return
+					end
+				end
+
+				-- Open Radar
 				RADAR:OpenRemote()
 			end
-		end )
+		end, false)
 		RegisterKeyMapping( "radar_remote", "Open Remote Control", "keyboard", CONFIG.keyDefaults.remote_control )
+
+		-- Locks speed from front antenna
+		RegisterCommand( "radar_fr_ant_st", function()
+			if ( not RADAR:GetKeyLockState() and PLY:CanControlRadar() ) then
+				RADAR:ToggleAntenna( "front" )
+			end
+		end, false)
+		RegisterKeyMapping( "radar_fr_ant_st", "Front Antenna State", "keyboard", CONFIG.keyDefaults.front_state )
+
+		-- Locks speed from rear antenna
+		RegisterCommand( "radar_bk_ant_st", function()
+			if ( not RADAR:GetKeyLockState() and PLY:CanControlRadar() ) then
+				RADAR:ToggleAntenna( "rear" )
+			end
+		end, false)
+		RegisterKeyMapping( "radar_bk_ant_st", "Rear Antenna State", "keyboard", CONFIG.keyDefaults.rear_state )
 
 		-- Locks speed from front antenna
 		RegisterCommand( "radar_fr_ant", function()
@@ -62,7 +101,7 @@ local function RegisterKeyBinds()
 
 				SYNC:LockAntennaSpeed( "front", RADAR:GetAntennaDataPacket( "front" ) )
 			end
-		end )
+		end, false)
 		RegisterKeyMapping( "radar_fr_ant", "Front Antenna Lock/Unlock", "keyboard", CONFIG.keyDefaults.front_lock )
 
 		-- Locks speed from rear antenna
@@ -72,7 +111,7 @@ local function RegisterKeyBinds()
 
 				SYNC:LockAntennaSpeed( "rear", RADAR:GetAntennaDataPacket( "rear" ) )
 			end
-		end )
+		end, false)
 		RegisterKeyMapping( "radar_bk_ant", "Rear Antenna Lock/Unlock", "keyboard", CONFIG.keyDefaults.rear_lock )
 
 		-- Locks front plate reader
@@ -82,7 +121,7 @@ local function RegisterKeyBinds()
 
 				SYNC:LockReaderCam( "front", READER:GetCameraDataPacket( "front" ) )
 			end
-		end )
+		end, false)
 		RegisterKeyMapping( "radar_fr_cam", "Front Plate Reader Lock/Unlock", "keyboard", CONFIG.keyDefaults.plate_front_lock )
 
 		-- Locks rear plate reader
@@ -92,13 +131,13 @@ local function RegisterKeyBinds()
 
 				SYNC:LockReaderCam( "rear", READER:GetCameraDataPacket( "rear" ) )
 			end
-		end )
+		end, false)
 		RegisterKeyMapping( "radar_bk_cam", "Rear Plate Reader Lock/Unlock", "keyboard", CONFIG.keyDefaults.plate_rear_lock )
 
 		-- Toggles the key lock state
 		RegisterCommand( "radar_key_lock", function()
 			RADAR:ToggleKeyLock()
-		end )
+		end, false)
 		RegisterKeyMapping( "radar_key_lock", "Toggle Keybind Lock", "keyboard", CONFIG.keyDefaults.key_lock )
 
 		-- Deletes all of the KVPs
@@ -156,6 +195,9 @@ RADAR.vars =
 	-- out of their vehicle
 	hidden = false,
 
+	-- Previous doppler audio volume when toggling via RegisteredCommand
+	previousDopplerAudio = ( CONFIG.enable_doppler and CONFIG.menuDefaults["dopAud"] or 0.0 ),
+
 	-- These are the settings that are used in the operator menu
 	settings = {
 		-- Should the system calculate and display faster targets
@@ -173,6 +215,12 @@ RADAR.vars =
 
 		-- The volume of the plate reader audio
 		["plateAudio"] = CONFIG.menuDefaults["plateAudio"],
+
+		-- The volume of the doppler audio
+		["dopAudio"] = ( CONFIG.enable_doppler and CONFIG.menuDefaults["dopAud"] or 0.0 ),
+
+		-- The antenna in which to play doppler audio on
+		["dopDirection"] = CONFIG.menuDefaults["dopDirection"],
 
 		-- The speed unit used in conversions
 		["speedType"] = CONFIG.menuDefaults["speedType"],
@@ -195,6 +243,8 @@ RADAR.vars =
 		{ displayText = { "bEE", "P¦¦" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 }, optionIndex = -1, settingText = "beep" },
 		{ displayText = { "VOI", "CE¦" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 }, optionIndex = -1, settingText = "voice" },
 		{ displayText = { "PLt", "AUd" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.2, 0.4, 0.6, 0.8, 1.0 }, optionIndex = -1, settingText = "plateAudio" },
+		{ displayText = { "DOP", "AUd" }, optionsText = { "Off", "¦1¦", "¦2¦", "¦3¦", "¦4¦", "¦5¦" }, options = { 0.0, 0.02, 0.03, 0.04, 0.05, 0.06 }, optionIndex = -1, settingText = "dopAudio" },
+		{ displayText = { "DOP", "DIR" }, optionsText = { "FNT", "RER", "BTH" }, options = { 1, 2, 3 }, optionIndex = -1, settingText = "dopDirection" },
 		{ displayText = { "Uni", "tS¦" }, optionsText = { "USA", "INT" }, options = { "mph", "kmh" }, optionIndex = -1, settingText = "speedType" }
 	},
 
@@ -264,8 +314,20 @@ RADAR.vars =
 	threadWaitTime = 500,
 
 	-- Key lock, when true, prevents any of the radar's key events from working, like the ELS key lock
-	keyLock = false
+	keyLock = false,
+
+	-- Current or last doppler state that was sent to JS/NUI
+	dopplerState = false
 }
+
+if ( not CONFIG.enable_doppler ) then
+	for i = #RADAR.vars.menuOptions, 1, -1 do
+		local opt = RADAR.vars.menuOptions[i]
+		if ( opt.settingText == "dopAudio" or opt.settingText == "dopDirection" ) then
+			table.remove( RADAR.vars.menuOptions, i )
+		end
+	end
+end
 
 -- Speed conversion values
 RADAR.speedConversions = { ["mph"] = 2.236936, ["kmh"] = 3.6 }
@@ -305,6 +367,31 @@ function RADAR:SetPoweringUpState( state )
 	self.vars.poweringUp = state
 end
 
+-- Returns radars previous volume
+function RADAR:GetPreviousDopplerAudio()
+	return self.vars.previousDopplerAudio
+end
+
+-- Sets radars previous volume
+function RADAR:SetPreviousDopplerAudio( vol )
+	self.vars.previousDopplerAudio = vol
+end
+
+function RADAR:IsDopplerAllowed()
+	return CONFIG.enable_doppler
+end
+
+function RADAR:RefreshDopplerVolume()
+	if ( not self:IsDopplerAllowed() ) then
+		self:SetPreviousDopplerAudio( 0.0 )
+		return
+	end
+
+	local volume = self:GetSettingValue( "dopAudio" )
+	SendNUIMessage( { _type = "dopplerVolume", vol = volume } )
+	self:SetPreviousDopplerAudio( volume )
+end
+
 -- Toggles the radar power
 function RADAR:SetPowerState( state, instantOverride )
 	local currentState = self:IsPowerOn()
@@ -335,12 +422,17 @@ function RADAR:SetPowerState( state, instantOverride )
 
 					-- Let the UI side know the system has loaded
 					SendNUIMessage( { _type = "poweredUp", fast = self:IsFastDisplayEnabled() } )
+					Citizen.Wait( 200 )
+					self:SetDopplerState( true )
 				end )
+			else
+				self:SetDopplerState( true )
 			end
 		else
 			-- If the system is being turned off, then we reset the antennas
 			self:ResetAntenna( "front" )
 			self:ResetAntenna( "rear" )
+			self:SetDopplerState( false )
 		end
 	end
 end
@@ -390,13 +482,16 @@ function RADAR:SendSettingUpdate()
 
 	-- Send a message to the NUI side with the current state of the antennas
 	SendNUIMessage( { _type = "settingUpdate", antennaData = antennas } )
+
+	-- Send a message to the NUI side with the current setting for the doppler audio volume
+	self:RefreshDopplerVolume()
 end
 
 -- Returns if a main task can be performed
 -- A main task such as the ray trace thread should only run if the radar's power is on, the system is not in the
 -- process of powering up, and the operator menu is not open
 function RADAR:CanPerformMainTask()
-	return self:IsPowerOn() and not self:IsPoweringUp() and not self:IsMenuOpen()
+	return self:IsPowerOn() and not self:IsPoweringUp() and not self:IsMenuOpen() and not self:GetDisplayHidden()
 end
 
 -- Returns/sets what the dynamic thread wait time is
@@ -524,6 +619,20 @@ function RADAR:GetKeyLockState()
 	return self.vars.keyLock
 end
 
+function RADAR:SetDopplerState( state )
+	self.vars.dopplerState = ( self:IsDopplerAllowed() and state or false )
+
+	if ( not self:IsDopplerAllowed() ) then
+		return
+	end
+
+	local dopVol = self:GetSettingValue( "dopAudio" )
+
+	if ( dopVol ~= 0.0 ) then
+		SendNUIMessage( { _type = "dopplerState", state = state } )
+	end
+end
+
 
 --[[----------------------------------------------------------------------------------
 	Radar menu functions
@@ -538,6 +647,9 @@ function RADAR:SetMenuState( state )
 		-- If we are opening the menu, make sure the first item is displayed
 		if ( state ) then
 			self.vars.currentOptionIndex = 1
+
+			-- Stop the doppler audio
+			self:SetDopplerState( false )
 		end
 	end
 end
@@ -549,6 +661,9 @@ function RADAR:CloseMenu( playAudio )
 
 	-- Send a setting update to the NUI side
 	RADAR:SendSettingUpdate()
+
+	-- Allow the doppler audio
+	self:SetDopplerState( true )
 
 	-- Play a menu done beep
 	if ( playAudio or playAudio == nil ) then
@@ -687,6 +802,13 @@ function RADAR:LoadOMData()
 	if ( rawData ~= nil ) then
 		local omData = json.decode( rawData )
 		self.vars.settings = omData
+
+		if ( not self:IsDopplerAllowed() ) then
+			self.vars.settings["dopAudio"] = 0.0
+		end
+
+		-- Send the doppler volume
+		self:RefreshDopplerVolume()
 
 		UTIL:Log( "Saved operator menu data loaded!" )
 	else
@@ -1647,6 +1769,10 @@ function RADAR:RunThreads()
 	if ( PLY:CanViewRadar() and self:CanPerformMainTask() and self:IsEitherAntennaOn() ) then
 		-- Before we create any of the custom ray trace threads, we need to make sure that the ray trace state
 		-- is at zero, if it is not at zero, then it means the system is still currently tracing
+		if ( self:IsDopplerAllowed() and self:GetSettingValue( "dopAudio" ) ~= 0.0 and self.vars.dopplerState == false ) then
+			self:SetDopplerState( true )
+		end
+
 		if ( self:GetRayTraceState() == 0 ) then
 			-- Grab a copy of the vehicle pool
 			local vehs = self:GetVehiclePool()
@@ -1666,6 +1792,8 @@ function RADAR:RunThreads()
 			-- Reset the ray trace state to 0
 			self:ResetRayTraceState()
 		end
+	elseif ( self.vars.dopplerState == true and self:IsDopplerAllowed() ) then
+		self:SetDopplerState( false )
 	end
 end
 
@@ -1733,7 +1861,7 @@ function RADAR:Main()
 						false: antenna is not currently locked
 						Example: data.antennas['front'][1].lock
 					]]
-					data.antennas[ant][i] = { speed = "¦¦¦", dir = 0, lock = self:IsAntennaSpeedLocked( ant ), mode = self:GetAntennaMode( ant )}
+					data.antennas[ant][i] = { speed = "¦¦¦", dir = 0, dopValue = nil, lock = self:IsAntennaSpeedLocked( ant ), mode = self:GetAntennaMode( ant )}
 					-- If the current iteration is the number 2 ('fastest') and there's a speed locked, grab the locked speed
 					-- and direction
 					if ( i == 2 and self:IsAntennaSpeedLocked( ant ) ) then
@@ -1757,6 +1885,22 @@ function RADAR:Main()
 									end
 								end
 							end
+							-- Set the doppler audio value to the exact vehicle entity speed, this way the doppler audio will be the same for
+							-- MPH and KMH
+							if ( self:IsDopplerAllowed() ) then
+								-- BOTH DIRECTIONS
+								local dopDir = self:GetSettingValue( "dopDirection" )
+								if dopDir == 3 then
+									data.antennas[ant][i].dopValue = vehSpeed
+								-- FRONT DIRECTION
+								elseif dopDir == 1 and ant == "front" then
+									data.antennas[ant][i].dopValue = vehSpeed
+								-- REAR DIRECTION
+								elseif dopDir == 2 and ant == "rear" then
+									data.antennas[ant][i].dopValue = vehSpeed
+								end
+							end
+
 							-- Work out if the vehicle is closing or away
 							local ownH = UTIL:Round( GetEntityHeading( PLY.veh ), 0 )
 							local tarH = UTIL:Round( GetEntityHeading( av[ant][i].veh ), 0 )

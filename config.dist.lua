@@ -60,6 +60,10 @@ CONFIG.allow_passenger_view = false
 -- radar remote and control the radar and plate reader for themself and the driver.
 CONFIG.allow_passenger_control = false
 
+-- Enable doppler audio/effects
+-- When disabled, all doppler functionality (audio, menu options, etc.) is removed.
+CONFIG.enable_doppler = false
+
 -- Set this to true if you use Sonoran CAD with the WraithV2 plugin
 CONFIG.use_sonorancad = true
 
@@ -72,6 +76,12 @@ CONFIG.keyDefaults =
 
 	-- Radar key lock key
 	key_lock = "l",
+
+	-- Radar front antenna hold toggle
+	front_state = "",
+
+	-- Radar rear antenna hold toggle
+	rear_state = "",
 
 	-- Radar front antenna lock/unlock Key
 	front_lock = "numpad8",
@@ -110,6 +120,14 @@ CONFIG.menuDefaults =
 	-- The volume of the plate reader audio
 	-- Options: 0.0, 0.2, 0.4, 0.6, 0.8, 1.0
 	["plateAudio"] = 0.6,
+
+	-- The volume of the doppler audio
+	-- Options: 0.0, 0.02, 0.03, 0.04, 0.05, 0.6
+	["dopAud"] = 0.02,
+
+	-- Antenna to play doppler audio on.
+	-- Option: 1-front, 2-rear, 3-both
+	["dopDirection"] = 3,
 
 	-- The speed unit used in conversions
 	-- Options: mph or kmh

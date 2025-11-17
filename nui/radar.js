@@ -151,6 +151,7 @@ const elements =
 	},
 
 	patrolSpeed: $( "#patrolSpeed" ),
+	dopplerMute: $( "#dopplerMuteLabel" ),
 
 	antennas: {
 		front: {
@@ -339,6 +340,17 @@ function setAntennaLock( ant, state )
 {
 	// Lighten or dull the lock led based on the given state
 	setLight( ant, "fast", "lockLabel", state ); 
+}
+
+// Sets the doppler mute light
+function setDopplerMute( state )
+{
+	// Lighten or dull the lock led based on the given state since its mute negate
+	if ( state ) {
+		elements.dopplerMute.addClass( "active" ); 
+	} else {
+		elements.dopplerMute.removeClass( "active" ); 
+	}
 }
 
 // Sets the directional arrows light for the given antenna
@@ -584,6 +596,80 @@ function settingUpdate( ants )
 		setAntennaMode( ant, ants[ant].mode ); 
 		setAntennaFastMode( ant, ants[ant].fast );  
 		setAntennaLock( ant, ants[ant].speedLocked );
+	}
+}
+
+
+/*------------------------------------------------------------------------------------
+	Doppler audio 
+------------------------------------------------------------------------------------*/
+const context = new AudioContext();
+var dopplerVol = 0.02; 
+
+let dopplerObjects = {
+	front: createDopplerObject( context ),
+	rear: createDopplerObject( context )
+} 
+
+function setDopplerVol( vol )
+{
+	dopplerVol = clamp( 0.5 * vol, 0.0001, 0.2 );
+}
+
+function setDopplerState( state )
+{
+	for ( let ant of [ "front", "rear" ] )
+	{
+		dopplerObjects[ant].vol.gain.exponentialRampToValueAtTime( state ? dopplerVol : 0.0001, context.currentTime + 0.1 );
+	}
+}
+
+function createDopplerObject( audioContext )
+{
+	let osc = audioContext.createOscillator();
+	let vol = audioContext.createGain();
+
+	osc.type = "sine";
+	osc.frequency.value = 0.0;
+	vol.gain.value = 0.0; 
+
+	osc.connect( vol );
+	vol.connect( audioContext.destination );
+
+	osc.start( 0 );
+
+	return { osc: osc, vol: vol }
+}
+
+function updateDoppler( ant, speed )
+{
+	if ( speed > 5 ) {
+		let freq = ( speed * 30 ) + ( Math.random() * 15 );
+		dopplerObjects[ant].osc.frequency.exponentialRampToValueAtTime( freq, context.currentTime + 0.1 );
+		dopplerObjects[ant].vol.gain.exponentialRampToValueAtTime( dopplerVol, context.currentTime + 0.1 );
+	} else {
+		dopplerObjects[ant].vol.gain.exponentialRampToValueAtTime( 0.00001, context.currentTime + 0.1 );
+	}
+}
+
+function playDoppler( ants )
+{
+	for ( let ant of [ "front", "rear" ] )
+	{
+		if ( ants[ant] != null )
+		{
+			var speed; 
+
+			if ( ants[ant][1].dopValue != null ) {
+				speed = ants[ant][1].dopValue;
+			} else {
+				speed = ants[ant][0].dopValue;
+			}
+
+			updateDoppler( ant, speed );
+		} else {
+			updateDoppler( ant, 0.0 );
+		}
 	}
 }
 
@@ -1121,6 +1207,7 @@ window.addEventListener( "message", function( event ) {
 			break;
 		case "update":
 			updateDisplays( item.speed, item.antennas );
+			playDoppler( item.antennas );
 			break; 
 		case "antennaXmit":
 			setAntennaXmit( item.ant, item.on );
@@ -1140,6 +1227,15 @@ window.addEventListener( "message", function( event ) {
 		case "settingUpdate":
 			settingUpdate( item.antennaData ); 
 			break; 
+		case "dopplerVolume":
+			setDopplerVol( item.vol );
+			break;
+		case "dopplerMute":
+			setDopplerMute( item.state );
+			break;
+		case "dopplerState":
+			setDopplerState( item.state );
+			break;
 
 		// Plate reader events
 		case "setReaderDisplayState":
