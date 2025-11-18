@@ -40,6 +40,21 @@ local math = math
 local pairs = pairs
 local jammedList = {}
 
+-- Default optional config values that may be missing in legacy configs
+if ( CONFIG.enable_doppler == nil ) then
+	CONFIG.enable_doppler = false
+end
+
+CONFIG.keyDefaults = CONFIG.keyDefaults or {}
+
+if ( type( CONFIG.keyDefaults.front_state ) ~= "string" ) then
+	CONFIG.keyDefaults.front_state = ""
+end
+
+if ( type( CONFIG.keyDefaults.rear_state ) ~= "string" ) then
+	CONFIG.keyDefaults.rear_state = ""
+end
+
 --[[----------------------------------------------------------------------------------
 	UI loading and key binds registering
 ----------------------------------------------------------------------------------]]--
