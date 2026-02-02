@@ -234,7 +234,7 @@ RADAR.vars =
 		["plateAudio"] = CONFIG.menuDefaults["plateAudio"],
 
 		-- The volume of the doppler audio
-		["dopAudio"] = ( CONFIG.enable_doppler and CONFIG.menuDefaults["dopAud"] or 0.0 ),
+		["dopAudio"] = ( 0.0 ),
 
 		-- The antenna in which to play doppler audio on
 		["dopDirection"] = CONFIG.menuDefaults["dopDirection"],
