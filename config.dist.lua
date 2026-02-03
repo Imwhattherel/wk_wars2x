@@ -62,7 +62,7 @@ CONFIG.allow_passenger_control = false
 
 -- Enable doppler audio/effects
 -- When disabled, all doppler functionality (audio, menu options, etc.) is removed.
-CONFIG.enable_doppler = false
+CONFIG.enable_doppler = true
 
 -- Set this to true if you use Sonoran CAD with the WraithV2 plugin
 CONFIG.use_sonorancad = true
